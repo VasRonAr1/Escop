@@ -1,3 +1,5 @@
+
+
 import logging
 import asyncio
 import time
@@ -21,20 +23,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ########################################
-# Глобальные переменные
+# Globale Variablen
 ########################################
 BOT_TOKEN = "7774783720:AAH9VuJYRaL6k0Ey4pfkUXwY5LhMsCAdbmQ"
-USER_STATE = {}        # user_id -> state
+USER_STATE = {}        # user_id -> Zustand
 USER_TAGGER_TASKS = {} # user_id -> asyncio.Task
 
 ########################################
-# Переопределение обработки FloodWait
+# Überschreiben der FloodWait-Behandlung
 ########################################
 async def no_flood_wait(wait_time):
     raise FloodWaitError(wait_time)
 
 ########################################
-# Keyboards
+# Tastaturen
 ########################################
 def start_keyboard():
     return InlineKeyboardMarkup([
@@ -43,7 +45,7 @@ def start_keyboard():
 
 def main_menu_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("Аккаунты", callback_data="menu_accounts")],
+        [InlineKeyboardButton("Konten", callback_data="menu_accounts")],
         [
             InlineKeyboardButton("Tagger starten 🚀", callback_data="launch_tagger"),
             InlineKeyboardButton("Tagger stoppen 🛑", callback_data="stop_tagger")
@@ -53,9 +55,9 @@ def main_menu_keyboard():
 
 def accounts_menu_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("Аккаунт №1", callback_data="account_1")],
-        [InlineKeyboardButton("Аккаунт №2", callback_data="account_2")],
-        [InlineKeyboardButton("<< Назад", callback_data="go_back_main_menu")]
+        [InlineKeyboardButton("Konto Nr. 1", callback_data="account_1")],
+        [InlineKeyboardButton("Konto Nr. 2", callback_data="account_2")],
+        [InlineKeyboardButton("<< Zurück", callback_data="go_back_main_menu")]
     ])
 
 def digit_keyboard(current_code=""):
@@ -70,7 +72,7 @@ def digit_keyboard(current_code=""):
          InlineKeyboardButton("8", callback_data="digit_8"),
          InlineKeyboardButton("9", callback_data="digit_9")],
         [InlineKeyboardButton("0", callback_data="digit_0"),
-         InlineKeyboardButton("Л⬅️", callback_data="digit_del"),
+         InlineKeyboardButton("Löschen ⬅️", callback_data="digit_del"),
          InlineKeyboardButton("OK✅", callback_data="digit_submit")]
     ]
     return InlineKeyboardMarkup(kb)
@@ -87,12 +89,12 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             2: {'client': None, 'api_id': None, 'api_hash': None, 'phone': None, 'is_authorized': False},
         }
     await update.message.reply_text(
-        "Привет! Нажми 'Weiter', чтобы увидеть меню:",
+        "Hallo! Drücke 'Weiter', um das Menü zu sehen:",
         reply_markup=start_keyboard()
     )
 
 ########################################
-# Получить последнее НЕ сервисное сообщение
+# Hole die letzte NICHT-Systemnachricht
 ########################################
 async def get_last_non_service_message(client: TelegramClient, source_group: str):
     entity = await client.get_entity(source_group)
@@ -103,7 +105,7 @@ async def get_last_non_service_message(client: TelegramClient, source_group: str
     return None
 
 ########################################
-# Основная функция спама (параллельная отправка)
+# Hauptfunktion des Spams (paralleles Senden)
 ########################################
 async def run_tagger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -115,17 +117,17 @@ async def run_tagger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     client2 = acc_data[2]['client']
 
     if not (acc_data[1]['is_authorized'] and acc_data[2]['is_authorized']):
-        await update.effective_message.reply_text("Оба аккаунта не авторизованы! Настройте их через меню 'Аккаунты'.")
+        await update.effective_message.reply_text("Beide Konten sind nicht autorisiert! Richte sie über das Menü 'Konten' ein.")
         return
     if not source_group:
-        await update.effective_message.reply_text("Не указана группа-источник.")
+        await update.effective_message.reply_text("Keine Quellgruppe angegeben.")
         return
 
     stop_keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("Tagger stoppen 🛑", callback_data="stop_tagger")]
     ])
     await update.effective_message.reply_text(
-        f"🚀 Запускаем рассылку!\nИнтервал отправки: {spam_interval} сек.\nПереключение аккаунтов каждые: {rotation_interval} сек.",
+        f"🚀 Starte den Versand!\nVersandintervall: {spam_interval} Sek.\nKontenwechsel alle: {rotation_interval} Sek.",
         reply_markup=stop_keyboard
     )
 
@@ -150,12 +152,12 @@ async def run_tagger(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if time.time() >= next_switch_time:
                     current_account = 2 if current_account == 1 else 1
                     next_switch_time = time.time() + rotation_interval
-                    logger.info(f"Переключился на аккаунт №{current_account}")
+                    logger.info(f"Wechsel zu Konto Nr. {current_account}")
             except asyncio.CancelledError:
-                logger.info("Tagger остановлен.")
+                logger.info("Tagger gestoppt.")
                 break
             except Exception as e:
-                logger.error(f"Ошибка в основном цикле: {e}")
+                logger.error(f"Fehler in der Hauptschleife: {e}")
                 await asyncio.sleep(5)
     finally:
         if client1 and client1.is_connected():
@@ -164,7 +166,7 @@ async def run_tagger(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await client2.disconnect()
         USER_TAGGER_TASKS.pop(user_id, None)
         USER_STATE[user_id] = "MAIN_MENU"
-        await update.effective_message.reply_text("🛑 Tagger остановлен.", reply_markup=main_menu_keyboard())
+        await update.effective_message.reply_text("🛑 Tagger gestoppt.", reply_markup=main_menu_keyboard())
 
 async def send_message_to_chat(client, chat, last_msg, account):
     try:
@@ -172,15 +174,15 @@ async def send_message_to_chat(client, chat, last_msg, account):
             await client.send_message(chat.id, last_msg.message)
         elif last_msg.media:
             await client.send_file(chat.id, last_msg.media)
-        logger.info(f"[Акк {account}] Отправлено в {chat.name or chat.id}")
+        logger.info(f"[Konto {account}] Gesendet an {chat.name or chat.id}")
     except FloodWaitError:
-        # Игнорируем FloodWaitError, не дожидаясь задержки
+        # FloodWaitError ignorieren, ohne Verzögerung abzuwarten
         pass
     except Exception as e:
-        logger.error(f"[Акк {account}] Ошибка отправки в {chat.name or chat.id}: {e}")
+        logger.error(f"[Konto {account}] Fehler beim Senden an {chat.name or chat.id}: {e}")
 
 ########################################
-# CALLBACK-Handler
+# Callback-Handler
 ########################################
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -189,33 +191,33 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     if data == "continue":
         USER_STATE[user_id] = "MAIN_MENU"
-        await query.edit_message_text("Главное меню:", reply_markup=main_menu_keyboard())
+        await query.edit_message_text("Hauptmenü:", reply_markup=main_menu_keyboard())
     elif data == "menu_accounts":
         USER_STATE[user_id] = "CHOOSE_ACCOUNT"
-        await query.edit_message_text("Выберите аккаунт:", reply_markup=accounts_menu_keyboard())
+        await query.edit_message_text("Wähle ein Konto:", reply_markup=accounts_menu_keyboard())
     elif data == "go_back_main_menu":
         USER_STATE[user_id] = "MAIN_MENU"
-        await query.edit_message_text("Главное меню:", reply_markup=main_menu_keyboard())
+        await query.edit_message_text("Hauptmenü:", reply_markup=main_menu_keyboard())
     elif data == "account_1":
         USER_STATE[user_id] = "ENTER_API_ID_1"
-        await query.edit_message_text("Введите API ID (число) для аккаунта №1:")
+        await query.edit_message_text("Gib die API-ID (Zahl) für Konto Nr. 1 ein:")
     elif data == "account_2":
         USER_STATE[user_id] = "ENTER_API_ID_2"
-        await query.edit_message_text("Введите API ID (число) для аккаунта №2:")
+        await query.edit_message_text("Gib die API-ID (Zahl) für Konto Nr. 2 ein:")
     elif data == "launch_tagger":
         USER_STATE[user_id] = "WAITING_SOURCE_GROUP"
-        await query.edit_message_text("Укажите @ссылку или username группы-источника:")
+        await query.edit_message_text("Gib den @Link oder Benutzernamen der Quellgruppe ein:")
     elif data == "stop_tagger":
         task = USER_TAGGER_TASKS.get(user_id)
         if task and not task.done():
             task.cancel()
         else:
-            await query.edit_message_text("Tagger не запущен.", reply_markup=main_menu_keyboard())
+            await query.edit_message_text("Tagger ist nicht gestartet.", reply_markup=main_menu_keyboard())
     elif data == "instructions":
         text_instructions = (
-            "1) Откройте «Аккаунты» и настройте оба аккаунта.\n"
-            "2) Запустите Tagger, указав группу-источник, интервал рассылки, интервал переключения.\n"
-            "3) Бот отправляет последние 'обычные' сообщения (пропуская сервисные)."
+            "1) Öffne 'Konten' und richte beide Konten ein.\n"
+            "2) Starte den Tagger, indem du die Quellgruppe, das Versandintervall und das Kontowechselintervall angibst.\n"
+            "3) Der Bot sendet die neuesten 'normalen' Nachrichten (ohne Systemnachrichten)."
         )
         await query.edit_message_text(text_instructions, reply_markup=main_menu_keyboard())
     elif data.startswith("digit_"):
@@ -226,7 +228,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif "WAITING_CODE_2" in state:
             acc_number = 2
         else:
-            await query.answer("Неожиданный ввод кода.", show_alert=True)
+            await query.answer("Unerwartete Code-Eingabe.", show_alert=True)
             return
         current_code = context.user_data.get(f'code_{acc_number}', '')
         if action.isdigit():
@@ -234,7 +236,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 current_code += action
                 context.user_data[f'code_{acc_number}'] = current_code
             else:
-                await query.answer("Макс длина кода 6", show_alert=True)
+                await query.answer("Maximale Code-Länge 6", show_alert=True)
         elif action == "del":
             current_code = current_code[:-1]
             context.user_data[f'code_{acc_number}'] = current_code
@@ -243,12 +245,12 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         masked_code = '*' * len(current_code) + '_' * (6 - len(current_code))
         await query.edit_message_text(
-            f"Аккаунт №{acc_number}. Введите код: {masked_code}",
+            f"Konto Nr. {acc_number}. Gib den Code ein: {masked_code}",
             reply_markup=digit_keyboard(current_code)
         )
 
 ########################################
-# TEXT-Handler
+# Text-Handler
 ########################################
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -260,54 +262,54 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = USER_STATE.get(user_id, "")
     if state == "ENTER_API_ID_1":
         if not update.message.text.strip().isdigit():
-            await update.message.reply_text("Введите число (API ID):")
+            await update.message.reply_text("Gib eine Zahl (API-ID) ein:")
             return
         acc_data = context.user_data['accounts'][1]
         acc_data['api_id'] = int(update.message.text.strip())
         USER_STATE[user_id] = "ENTER_API_HASH_1"
-        await update.message.reply_text("Введите API Hash для аккаунта №1:")
+        await update.message.reply_text("Gib den API-Hash für Konto Nr. 1 ein:")
         return
     if state == "ENTER_API_HASH_1":
         acc_data = context.user_data['accounts'][1]
         acc_data['api_hash'] = update.message.text.strip()
         USER_STATE[user_id] = "ENTER_PHONE_1"
-        await update.message.reply_text("Введите телефон (формат +9999999999) для аккаунта №1:")
+        await update.message.reply_text("Gib die Telefonnummer (Format +9999999999) für Konto Nr. 1 ein:")
         return
     if state == "ENTER_PHONE_1":
         phone = update.message.text.strip()
         if not phone.startswith('+') or not phone[1:].isdigit():
-            await update.message.reply_text("Формат телефона: +123456789")
+            await update.message.reply_text("Telefonformat: +123456789")
             return
         acc_data = context.user_data['accounts'][1]
         acc_data['phone'] = phone
         USER_STATE[user_id] = "WAITING_CODE_1"
-        await update.message.reply_text("Запрашиваю код у Telegram...")
+        await update.message.reply_text("Fordere den Code von Telegram an...")
         await create_telethon_client(update, context, acc_number=1)
         return
     if state == "ENTER_API_ID_2":
         if not update.message.text.strip().isdigit():
-            await update.message.reply_text("Введите число (API ID):")
+            await update.message.reply_text("Gib eine Zahl (API-ID) ein:")
             return
         acc_data = context.user_data['accounts'][2]
         acc_data['api_id'] = int(update.message.text.strip())
         USER_STATE[user_id] = "ENTER_API_HASH_2"
-        await update.message.reply_text("Введите API Hash для аккаунта №2:")
+        await update.message.reply_text("Gib den API-Hash für Konto Nr. 2 ein:")
         return
     if state == "ENTER_API_HASH_2":
         acc_data = context.user_data['accounts'][2]
         acc_data['api_hash'] = update.message.text.strip()
         USER_STATE[user_id] = "ENTER_PHONE_2"
-        await update.message.reply_text("Введите телефон (формат +9999999999) для аккаунта №2:")
+        await update.message.reply_text("Gib die Telefonnummer (Format +9999999999) für Konto Nr. 2 ein:")
         return
     if state == "ENTER_PHONE_2":
         phone = update.message.text.strip()
         if not phone.startswith('+') or not phone[1:].isdigit():
-            await update.message.reply_text("Формат телефона: +123456789")
+            await update.message.reply_text("Telefonformat: +123456789")
             return
         acc_data = context.user_data['accounts'][2]
         acc_data['phone'] = phone
         USER_STATE[user_id] = "WAITING_CODE_2"
-        await update.message.reply_text("Запрашиваю код у Telegram...")
+        await update.message.reply_text("Fordere den Code von Telegram an...")
         await create_telethon_client(update, context, acc_number=2)
         return
     if state == "WAITING_PASSWORD_1":
@@ -315,120 +317,120 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         acc_data = context.user_data['accounts'][1]
         client = acc_data['client']
         if not client:
-            await update.message.reply_text("Клиент не инициализирован. Повторите заново.")
+            await update.message.reply_text("Client nicht initialisiert. Starte von vorn.")
             return
         try:
             await client.sign_in(password=pw)
             acc_data['is_authorized'] = True
             USER_STATE[user_id] = "MAIN_MENU"
-            await update.message.reply_text("Аккаунт №1 успешно авторизован!", reply_markup=main_menu_keyboard())
+            await update.message.reply_text("Konto Nr. 1 erfolgreich autorisiert!", reply_markup=main_menu_keyboard())
         except errors.PasswordHashInvalidError:
-            await update.message.reply_text("Неверный пароль. Попробуйте снова.")
+            await update.message.reply_text("Falsches Passwort. Versuche es erneut.")
         except FloodWaitError as e:
-            await update.message.reply_text(f"Слишком много попыток. Подождите {e.seconds} сек.")
+            await update.message.reply_text(f"Zu viele Versuche. Warte {e.seconds} Sek.")
             USER_STATE[user_id] = "MAIN_MENU"
         except Exception as e:
-            await update.message.reply_text(f"Ошибка: {e}")
+            await update.message.reply_text(f"Fehler: {e}")
         return
     if state == "WAITING_PASSWORD_2":
         pw = update.message.text.strip()
         acc_data = context.user_data['accounts'][2]
         client = acc_data['client']
         if not client:
-            await update.message.reply_text("Клиент не инициализирован. Повторите заново.")
+            await update.message.reply_text("Client nicht initialisiert. Starte von vorn.")
             return
         try:
             await client.sign_in(password=pw)
             acc_data['is_authorized'] = True
             USER_STATE[user_id] = "MAIN_MENU"
-            await update.message.reply_text("Аккаунт №2 успешно авторизован!", reply_markup=main_menu_keyboard())
+            await update.message.reply_text("Konto Nr. 2 erfolgreich autorisiert!", reply_markup=main_menu_keyboard())
         except errors.PasswordHashInvalidError:
-            await update.message.reply_text("Неверный пароль. Попробуйте снова.")
+            await update.message.reply_text("Falsches Passwort. Versuche es erneut.")
         except FloodWaitError as e:
-            await update.message.reply_text(f"Слишком много попыток. Подождите {e.seconds} сек.")
+            await update.message.reply_text(f"Zu viele Versuche. Warte {e.seconds} Sek.")
             USER_STATE[user_id] = "MAIN_MENU"
         except Exception as e:
-            await update.message.reply_text(f"Ошибка: {e}")
+            await update.message.reply_text(f"Fehler: {e}")
         return
     if state == "WAITING_SOURCE_GROUP":
         source_group = update.message.text.strip()
         if not source_group:
-            await update.message.reply_text("Введите корректную ссылку/username группы.")
+            await update.message.reply_text("Gib einen gültigen Link/Benutzernamen der Gruppe ein.")
             return
         context.user_data['source_group'] = source_group
         USER_STATE[user_id] = "WAITING_SPAM_INTERVAL"
-        await update.message.reply_text("Введите интервал рассылки (сек), например 60:")
+        await update.message.reply_text("Gib das Versandintervall (Sekunden), z. B. 60, ein:")
         return
     if state == "WAITING_SPAM_INTERVAL":
         try:
             val = float(update.message.text.strip())
             if val <= 0:
-                raise ValueError("Интервал должен быть > 0.")
+                raise ValueError("Das Intervall muss > 0 sein.")
             context.user_data['spam_interval'] = val
             USER_STATE[user_id] = "WAITING_ROTATION_INTERVAL"
-            await update.message.reply_text("Теперь введите интервал переключения аккаунтов (сек), например 300:")
+            await update.message.reply_text("Gib nun das Kontowechselintervall (Sekunden), z. B. 300, ein:")
         except ValueError:
-            await update.message.reply_text("Нужно положительное число. Попробуйте ещё раз.")
+            await update.message.reply_text("Bitte gib eine positive Zahl ein. Versuche es erneut.")
         return
     if state == "WAITING_ROTATION_INTERVAL":
         try:
             val = float(update.message.text.strip())
             if val <= 0:
-                raise ValueError("Интервал должен быть > 0.")
+                raise ValueError("Das Intervall muss > 0 sein.")
             context.user_data['rotation_interval'] = val
-            await update.message.reply_text("Настройки приняты! Запускаю спам...")
+            await update.message.reply_text("Einstellungen übernommen! Starte den Versand...")
             USER_STATE[user_id] = "SPAM_READY"
             task = asyncio.create_task(run_tagger(update, context))
             USER_TAGGER_TASKS[user_id] = task
         except ValueError:
-            await update.message.reply_text("Нужно положительное число. Попробуйте ещё раз.")
+            await update.message.reply_text("Bitte gib eine positive Zahl ein. Versuche es erneut.")
         return
-    await update.message.reply_text("Неизвестная команда. Используйте меню.")
+    await update.message.reply_text("Unbekannter Befehl. Bitte verwende das Menü.")
 
 ########################################
-# Подтверждение кода
+# Bestätigung des Codes
 ########################################
 async def confirm_code(update: Update, context: ContextTypes.DEFAULT_TYPE, acc_number: int):
     user_id = update.effective_user.id
     code = context.user_data.get(f'code_{acc_number}', '')
     if not code:
-        await update.effective_message.reply_text("Код пуст. Введите заново.")
+        await update.effective_message.reply_text("Code ist leer. Bitte erneut eingeben.")
         return
     acc_data = context.user_data['accounts'][acc_number]
     client = acc_data['client']
     if not client:
-        await update.effective_message.reply_text("Клиент не инициализирован. Начните заново.")
+        await update.effective_message.reply_text("Client nicht initialisiert. Starte von vorn.")
         return
     phone_number = acc_data['phone']
     try:
         await client.sign_in(phone_number, code)
     except SessionPasswordNeededError:
         USER_STATE[user_id] = f"WAITING_PASSWORD_{acc_number}"
-        await update.effective_message.reply_text("У вас включён 2FA. Введите пароль (сообщением).")
+        await update.effective_message.reply_text("Zwei-Faktor-Authentifizierung ist aktiviert. Gib dein Passwort ein:")
         return
     except FloodWaitError as e:
-        await update.effective_message.reply_text(f"Слишком много попыток. Подождите {e.seconds} сек.")
+        await update.effective_message.reply_text(f"Zu viele Versuche. Warte {e.seconds} Sek.")
         USER_STATE[user_id] = "MAIN_MENU"
         return
     except errors.PhoneCodeInvalidError:
-        await update.effective_message.reply_text("Неверный код. Повторите ввод.")
+        await update.effective_message.reply_text("Falscher Code. Bitte erneut eingeben.")
         context.user_data[f'code_{acc_number}'] = ""
         await update.effective_message.reply_text(
-            f"Аккаунт №{acc_number}. Введите код:",
+            f"Konto Nr. {acc_number}. Gib den Code ein:",
             reply_markup=digit_keyboard()
         )
         USER_STATE[user_id] = f"WAITING_CODE_{acc_number}"
         return
     except Exception as e:
-        await update.effective_message.reply_text(f"Ошибка при вводе кода: {e}")
+        await update.effective_message.reply_text(f"Fehler bei der Code-Eingabe: {e}")
         return
     acc_data['is_authorized'] = True
     USER_STATE[user_id] = "MAIN_MENU"
-    await update.effective_message.reply_text(f"Аккаунт №{acc_number} успешно авторизован!",
+    await update.effective_message.reply_text(f"Konto Nr. {acc_number} erfolgreich autorisiert!",
                                               reply_markup=main_menu_keyboard())
 
 ########################################
-# Создание/подключение Telethon-клиента
+# Erstellen/Verbinden des Telethon-Clients
 ########################################
 async def create_telethon_client(update: Update, context: ContextTypes.DEFAULT_TYPE, acc_number: int):
     acc_data = context.user_data['accounts'][acc_number]
@@ -436,11 +438,11 @@ async def create_telethon_client(update: Update, context: ContextTypes.DEFAULT_T
     api_hash = acc_data['api_hash']
     phone_number = acc_data['phone']
     if not api_id or not api_hash or not phone_number:
-        await update.message.reply_text("API-данные не полные. Начните заново.")
+        await update.message.reply_text("Unvollständige API-Daten. Starte von vorn.")
         return
     session_name = f"session_user_{update.effective_user.id}_acc_{acc_number}"
-    # Параметр flood_sleep_threshold=0 отключает автоматическое ожидание,
-    # а затем переопределяем _handle_flood_wait чтобы сразу бросать исключение.
+    # Der Parameter flood_sleep_threshold=0 deaktiviert das automatische Warten,
+    # und wir überschreiben _handle_flood_wait, um sofort eine Ausnahme zu werfen.
     if not acc_data['client']:
         client = TelegramClient(session_name, api_id, api_hash, flood_sleep_threshold=0)
         await client.connect()
@@ -457,21 +459,21 @@ async def create_telethon_client(update: Update, context: ContextTypes.DEFAULT_T
             context.user_data[f'code_{acc_number}'] = ""
             USER_STATE[update.effective_user.id] = f"WAITING_CODE_{acc_number}"
             await update.message.reply_text(
-                f"Аккаунт №{acc_number}. Введите код из Telegram:",
+                f"Konto Nr. {acc_number}. Gib den Telegram-Code ein:",
                 reply_markup=digit_keyboard()
             )
         else:
             acc_data['is_authorized'] = True
             USER_STATE[update.effective_user.id] = "MAIN_MENU"
             await update.message.reply_text(
-                f"Аккаунт №{acc_number} уже авторизован!",
+                f"Konto Nr. {acc_number} ist bereits autorisiert!",
                 reply_markup=main_menu_keyboard()
             )
     except FloodWaitError as e:
-        await update.message.reply_text(f"FloodWaitError: подождите {e.seconds} сек.")
+        await update.message.reply_text(f"FloodWaitError: Warte {e.seconds} Sek.")
         USER_STATE[update.effective_user.id] = "MAIN_MENU"
     except Exception as e:
-        await update.message.reply_text(f"Ошибка: {e}")
+        await update.message.reply_text(f"Fehler: {e}")
         USER_STATE[update.effective_user.id] = "MAIN_MENU"
 
 ########################################
